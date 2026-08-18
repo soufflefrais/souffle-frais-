@@ -209,4 +209,237 @@
 
 <script src="script.js"></script>
 </body>
+  </html><!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SouffleFrais — Climatiseurs & ventilateurs, réservez avant rupture de stock</title>
+<meta name="description" content="Réservez votre climatiseur ou ventilateur en ligne, payez en toute sécurité par carte bancaire, récupérez en boutique.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="#top" class="logo">Souffle<span>Frais</span></a>
+    <nav class="main-nav" aria-label="Navigation principale">
+      <a href="#catalogue-clim">Climatiseurs</a>
+      <a href="#catalogue-vent">Ventilateurs</a>
+      <a href="#comment-ca-marche">Comment ça marche</a>
+    </nav>
+    <span id="userStatus" class="user-status"></span>
+    <button class="cart-btn" id="cartToggle" aria-haspopup="dialog" aria-controls="cartDrawer">
+      <span aria-hidden="true">🧺</span>
+      Réservation
+      <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <p class="eyebrow">Réservation en ligne — retrait en boutique</p>
+      <h1>La chaleur arrive.<br>Le stock, lui, <em>s'épuise</em>.</h1>
+      <p class="hero-sub">Réservez votre climatiseur ou ventilateur en 2 minutes. Paiement sécurisé, retrait en boutique dès l'ouverture.</p>
+      <a href="#catalogue-clim" class="btn btn-primary">Voir les appareils disponibles</a>
+    </div>
+  </section>
+
+  <section class="how-it-works" id="comment-ca-marche">
+    <div class="wrap">
+      <h2>Comment ça marche</h2>
+      <ol class="steps">
+        <li>
+          <span class="step-index">1</span>
+          <h3>Réservez en ligne</h3>
+          <p>Choisissez votre appareil. Votre réservation bloque le stock immédiatement, avant l'ouverture de la boutique.</p>
+        </li>
+        <li>
+          <span class="step-index">2</span>
+          <h3>Payez en toute sécurité</h3>
+          <p>50% d'acompte par carte via FedaPay, solde à régler au retrait ou à la livraison. Aucune donnée bancaire n'est stockée sur ce site.</p>
+        </li>
+        <li>
+          <span class="step-index">3</span>
+          <h3>Récupérez en boutique</h3>
+          <p>Votre appareil vous attend, réservé à votre nom, sans file d'attente.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="catalogue" id="catalogue-clim">
+    <div class="wrap">
+      <h2>Climatiseurs</h2>
+      <div class="product-grid" data-category="clim"></div>
+    </div>
+  </section>
+
+  <section class="catalogue catalogue-alt" id="catalogue-vent">
+    <div class="wrap">
+      <h2>Ventilateurs</h2>
+      <div class="product-grid" data-category="vent"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div>
+      <p class="logo footer-logo">Souffle<span>Frais</span></p>
+      <p class="footer-note">Réservation et vente de climatiseurs et ventilateurs.</p>
+    </div>
+    <div class="footer-links">
+      <button class="link-btn open-mentions" type="button">Mentions légales</button>
+      <button class="link-btn open-privacy" type="button">Politique de confidentialité</button>
+      <a href="mailto:contact@souffle-frais.fr">contact@souffle-frais.fr</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Panier / Réservation -->
+<div class="drawer-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" role="dialog" aria-label="Votre réservation" aria-hidden="true">
+  <div class="drawer-header">
+    <h2>Votre réservation</h2>
+    <button class="icon-btn" id="closeCart" aria-label="Fermer">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems">
+    <p class="cart-empty">Aucun appareil réservé pour l'instant.</p>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-total-row">
+      <span>Total</span>
+      <strong id="cartTotal">0 €</strong>
+    </div>
+    <button class="btn btn-primary btn-full" id="proceedToCheckout" disabled>Continuer</button>
+  </div>
+</aside>
+
+<!-- Connexion / Création de compte -->
+<div class="modal-overlay" id="authOverlay"></div>
+<div class="modal" id="authModal" role="dialog" aria-label="Connexion" aria-hidden="true">
+  <button class="icon-btn modal-close" id="closeAuth" aria-label="Fermer">✕</button>
+  <div class="auth-tabs">
+    <button class="auth-tab active" type="button" data-tab="login">Connexion</button>
+    <button class="auth-tab" type="button" data-tab="signup">Créer un compte</button>
+  </div>
+
+  <form id="loginForm" class="auth-form active">
+    <label for="loginEmail">Email</label>
+    <input type="email" id="loginEmail" required autocomplete="email">
+    <label for="loginPassword">Mot de passe</label>
+    <input type="password" id="loginPassword" required autocomplete="current-password">
+    <p class="form-error" id="loginError"></p>
+    <button type="submit" class="btn btn-primary btn-full">Se connecter</button>
+  </form>
+
+  <form id="signupForm" class="auth-form">
+    <label for="signupFirstName">Prénom</label>
+    <input type="text" id="signupFirstName" required autocomplete="given-name">
+    <label for="signupLastName">Nom</label>
+    <input type="text" id="signupLastName" required autocomplete="family-name">
+    <label for="signupEmail">Email</label>
+    <input type="email" id="signupEmail" required autocomplete="email">
+    <label for="signupPhone">Téléphone</label>
+    <input type="tel" id="signupPhone" required autocomplete="tel">
+    <label for="signupCity">Ville de retrait</label>
+    <input type="text" id="signupCity" required autocomplete="address-level2" placeholder="Ex : Lyon">
+    <label for="signupZip">Code postal</label>
+    <input type="text" id="signupZip" required autocomplete="postal-code" placeholder="Ex : 69000">
+    <label for="signupPassword">Mot de passe</label>
+    <input type="password" id="signupPassword" required minlength="6" autocomplete="new-password">
+    <label class="checkbox-row">
+      <input type="checkbox" id="consentRequired" required>
+      <span>J'accepte que mes informations soient utilisées pour traiter ma réservation, conformément à la <button type="button" class="link-btn inline open-privacy">politique de confidentialité</button>.</span>
+    </label>
+    <label class="checkbox-row">
+      <input type="checkbox" id="consentMarketing">
+      <span>Je souhaite recevoir les offres et alertes de réapprovisionnement par email (facultatif).</span>
+    </label>
+    <p class="form-error" id="signupError"></p>
+    <button type="submit" class="btn btn-primary btn-full">Créer mon compte</button>
+  </form>
+</div>
+
+<!-- Paiement -->
+<div class="modal-overlay" id="checkoutOverlay"></div>
+<div class="modal" id="checkoutModal" role="dialog" aria-label="Paiement" aria-hidden="true">
+  <button class="icon-btn modal-close" id="closeCheckout" aria-label="Fermer">✕</button>
+  <h2>Finaliser la réservation</h2>
+  <p class="checkout-hello" id="checkoutHello"></p>
+  <div class="checkout-summary" id="checkoutSummary"></div>
+
+  <div class="delivery-choice">
+    <label for="deliveryChoice">Comment récupérer votre commande ?</label>
+    <select id="deliveryChoice">
+      <option value="pickup">Retrait en boutique</option>
+      <option value="delivery">Livraison à mon adresse</option>
+    </select>
+  </div>
+  <div class="delivery-choice" id="deliveryAddressRow" style="display:none;">
+    <label for="deliveryAddress">Adresse de livraison complète</label>
+    <input type="text" id="deliveryAddress" placeholder="N°, rue, ville, code postal">
+  </div>
+
+  <div class="checkout-total-row">
+    <span>Total</span>
+    <strong id="checkoutTotal">0 €</strong>
+  </div>
+  <div class="checkout-line">
+    <span>Acompte à payer maintenant (50%)</span>
+    <strong id="checkoutDeposit">0 €</strong>
+  </div>
+  <div class="checkout-line">
+    <span>Solde à régler au retrait/livraison</span>
+    <span id="checkoutBalance">0 €</span>
+  </div>
+  <button type="button" id="fedapayPayBtn" class="btn btn-primary btn-full">Payer l'acompte avec FedaPay</button>
+  <p class="checkout-note">Paiement sécurisé par FedaPay (carte bancaire). Vous recevrez une confirmation par email.</p>
+</div>
+
+<!-- Mentions légales / confidentialité -->
+<div class="modal-overlay" id="legalOverlay"></div>
+<div class="modal modal-text" id="mentionsLegalesModal" role="dialog" aria-label="Mentions légales" aria-hidden="true">
+  <button class="icon-btn modal-close" data-close-legal aria-label="Fermer">✕</button>
+  <h2>Mentions légales</h2>
+  <p><em>À compléter avec vos informations réelles avant mise en ligne.</em></p>
+  <ul>
+    <li><strong>Éditeur du site :</strong> [Nom / raison sociale]</li>
+    <li><strong>Statut :</strong> [Auto-entrepreneur / société — SIRET à ajouter]</li>
+    <li><strong>Adresse :</strong> [Adresse complète]</li>
+    <li><strong>Contact :</strong> contact@souffle-frais.fr</li>
+    <li><strong>Hébergeur :</strong> [Nom et adresse de l'hébergeur]</li>
+  </ul>
+</div>
+
+<div class="modal modal-text" id="politiqueModal" role="dialog" aria-label="Politique de confidentialité" aria-hidden="true">
+  <button class="icon-btn modal-close" data-close-legal aria-label="Fermer">✕</button>
+  <h2>Politique de confidentialité</h2>
+  <p>Nous collectons votre nom, prénom, email, téléphone et ville de retrait uniquement pour traiter votre réservation et vous contacter à ce sujet.</p>
+  <ul>
+    <li>Vos données ne sont jamais vendues à des tiers.</li>
+    <li>Vous pouvez demander l'accès, la correction ou la suppression de vos données à tout moment, à contact@souffle-frais.fr.</li>
+    <li>Le paiement est traité directement par FedaPay ; nous ne stockons aucune donnée bancaire.</li>
+  </ul>
+  <p><em>Document type à faire valider avant mise en ligne.</em></p>
+</div>
+
+<!-- Firebase : remplacez firebaseConfig dans script.js par celle de votre projet -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- FedaPay : remplacez publicKey dans script.js -->
+<script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
+
+<script src="script.js"></script>
+</body>
   </html>
