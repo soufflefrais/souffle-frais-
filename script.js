@@ -35,24 +35,57 @@ try {
     auth = firebase.auth();
     db = firebase.firestore();
     firebaseReady = true;
+    // Garde le client connecté sur son téléphone tant qu'il ne se déconnecte pas lui-même
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
   }
 } catch (e) {
   console.warn('Firebase non configuré :', e.message);
 }
 
+// Reconnecte automatiquement un client déjà inscrit, au chargement de la page
+function watchAuthState() {
+  if (!firebaseReady) return;
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      const profileDoc = await db.collection('users').doc(user.uid).get();
+      const profile = profileDoc.exists ? profileDoc.data() : {};
+      currentUser = { firstName: profile.firstName || '', lastName: profile.lastName || '', email: user.email, phone: profile.phone, city: profile.city, zip: profile.zip };
+    } else {
+      currentUser = null;
+    }
+    renderUserStatus();
+  });
+}
+
+function renderUserStatus() {
+  const el = document.getElementById('userStatus');
+  if (!el) return;
+  if (currentUser) {
+    el.innerHTML = '';
+    const greeting = document.createElement('span');
+    greeting.textContent = `Bonjour ${currentUser.firstName}`;
+    const logoutBtn = document.createElement('button');
+    logoutBtn.type = 'button';
+    logoutBtn.className = 'link-btn logout-btn';
+    logoutBtn.textContent = 'Déconnexion';
+    logoutBtn.addEventListener('click', () => auth.signOut());
+    el.append(greeting, logoutBtn);
+  } else {
+    el.innerHTML = '';
+  }
+}
+
 // ============================================================
-// CINETPAY — À REMPLACER par les identifiants de votre compte
-// (Tableau de bord CinetPay > Intégration)
-// notify_url : idéalement une petite adresse serveur qui reçoit la
-// confirmation de CinetPay ; sans ça, on se fie à waitResponse()
-// ci-dessous, ce qui suffit pour démarrer.
+// FEDAPAY — À REMPLACER par la clé publique de votre compte
+// (Tableau de bord FedaPay > Paramètres > Clés API)
+// Créez un compte de type "Individuel / Startup" sur fedapay.com
 // ============================================================
-const cinetpayConfig = {
-  apikey: 'VOTRE_APIKEY_CINETPAY',
-  site_id: 'VOTRE_SITE_ID_CINETPAY',
-  mode: 'PRODUCTION', // mettez 'SANDBOX' pour tester sans vrai paiement
-  notify_url: 'https://votre-domaine.com/notify'
+const fedapayConfig = {
+  publicKey: 'VOTRE_CLE_PUBLIQUE_FEDAPAY',
+  environment: 'live' // mettez 'sandbox' pour tester sans vrai paiement
 };
+// Le XOF est indexé sur l'euro à un taux fixe (pas besoin de le mettre à jour)
+const EUR_TO_XOF = 655.957;
 
 // ============================================================
 // ÉTAT
@@ -231,7 +264,15 @@ function openCheckout() {
   });
 
   const total = cart.reduce((sum, item) => sum + item.price, 0);
+  const deposit = Math.round(total * 0.5 * 100) / 100;
+  const balance = total - deposit;
   document.getElementById('checkoutTotal').textContent = formatPrice(total);
+  document.getElementById('checkoutDeposit').textContent = formatPrice(deposit);
+  document.getElementById('checkoutBalance').textContent = formatPrice(balance);
+
+  document.getElementById('deliveryChoice').value = 'pickup';
+  document.getElementById('deliveryAddressRow').style.display = 'none';
+  document.getElementById('deliveryAddress').value = '';
 
   document.getElementById('checkoutModal').classList.add('open');
   document.getElementById('checkoutOverlay').classList.add('visible');
@@ -241,71 +282,75 @@ function closeCheckoutModal() {
   document.getElementById('checkoutOverlay').classList.remove('visible');
 }
 
-function startCinetPayCheckout() {
-  if (!window.CinetPay) {
-    alert("Le module de paiement CinetPay ne s'est pas chargé. Vérifiez votre connexion.");
+function startFedaPayCheckout() {
+  if (!window.FedaPay) {
+    alert("Le module de paiement FedaPay ne s'est pas chargé. Vérifiez votre connexion.");
     return;
   }
-  if (cinetpayConfig.apikey === 'VOTRE_APIKEY_CINETPAY') {
-    alert('Paiement indisponible : configurez CinetPay (voir script.js).');
+  if (fedapayConfig.publicKey === 'VOTRE_CLE_PUBLIQUE_FEDAPAY') {
+    alert('Paiement indisponible : configurez FedaPay (voir script.js).');
     return;
   }
   if (cart.length === 0 || !currentUser) return;
 
+  const deliveryChoice = document.getElementById('deliveryChoice').value;
+  const deliveryAddress = document.getElementById('deliveryAddress').value.trim();
+  if (deliveryChoice === 'delivery' && !deliveryAddress) {
+    alert('Merci de préciser votre adresse de livraison.');
+    return;
+  }
+
   const total = cart.reduce((sum, item) => sum + item.price, 0);
+  const deposit = Math.round(total * 0.5 * 100) / 100;
+  const depositXOF = Math.round(deposit * EUR_TO_XOF);
   const description = cart.map(item => item.name).join(', ').slice(0, 255);
-  const transactionId = 'CMD' + Date.now();
 
-  CinetPay.setConfig({
-    apikey: cinetpayConfig.apikey,
-    site_id: cinetpayConfig.site_id,
-    mode: cinetpayConfig.mode,
-    notify_url: cinetpayConfig.notify_url
-  });
-
-  CinetPay.getCheckout({
-    transaction_id: transactionId,
-    amount: total,
-    // EUR est pris en charge par CinetPay, mais vérifiez que c'est bien
-    // activé sur votre compte ; sinon, utilisez 'XOF' avec un montant converti.
-    currency: 'EUR',
-    channels: 'ALL',
-    description: description || 'Réservation SouffleFrais',
-    customer_name: currentUser.firstName,
-    customer_surname: currentUser.lastName,
-    customer_email: currentUser.email,
-    customer_phone_number: currentUser.phone,
-    customer_address: currentUser.city,
-    customer_city: currentUser.city,
-    customer_country: 'FR',
-    customer_state: 'FR',
-    customer_zip_code: currentUser.zip
-  });
-
-  CinetPay.waitResponse(function (data) {
-    if (data.status === 'REFUSED') {
-      alert('Le paiement a échoué. Réessayez.');
-    } else if (data.status === 'ACCEPTED') {
-      confirmReservation({ transactionId: transactionId });
+  const FedaPay = window['FedaPay'];
+  const widget = FedaPay.init({
+    public_key: fedapayConfig.publicKey,
+    environment: fedapayConfig.environment,
+    transaction: {
+      amount: depositXOF,
+      description: `Acompte 50% - ${description || 'Réservation SouffleFrais'}`
+    },
+    currency: { iso: 'XOF' },
+    customer: {
+      email: currentUser.email,
+      firstname: currentUser.firstName,
+      lastname: currentUser.lastName,
+      phone_number: { number: currentUser.phone, country: 'BJ' }
+    },
+    onComplete: (resp) => {
+      if (resp.reason === FedaPay.DIALOG_DISMISSED) return;
+      if (resp.transaction && resp.transaction.status === 'approved') {
+        confirmReservation({
+          transactionId: resp.transaction.id,
+          total, deposit, balance: total - deposit,
+          deliveryChoice, deliveryAddress
+        });
+      } else {
+        alert('Le paiement a échoué ou a été refusé. Réessayez.');
+      }
     }
   });
-
-  CinetPay.onError(function (data) {
-    console.error('Erreur CinetPay :', data);
-    alert("Le paiement n'a pas pu être finalisé. Réessayez.");
-  });
+  widget.open();
 }
 
-async function confirmReservation(paymentDetails) {
-  // En production : vérifiez et enregistrez la réservation côté serveur
-  // (via notify_url) avant de la considérer comme définitivement payée.
+async function confirmReservation(details) {
+  // En production : vérifiez la transaction FedaPay côté serveur avant de
+  // considérer l'acompte comme définitivement payé.
   if (firebaseReady && db && currentUser) {
     try {
       await db.collection('reservations').add({
         userEmail: currentUser.email,
         items: cart,
-        total: cart.reduce((sum, item) => sum + item.price, 0),
-        cinetpayTransactionId: paymentDetails.transactionId,
+        total: details.total,
+        deposit: details.deposit,
+        balance: details.balance,
+        balanceDue: 'à régler au retrait',
+        deliveryChoice: details.deliveryChoice,
+        deliveryAddress: details.deliveryChoice === 'delivery' ? details.deliveryAddress : null,
+        fedapayTransactionId: details.transactionId,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     } catch (e) {
@@ -315,7 +360,10 @@ async function confirmReservation(paymentDetails) {
   cart = [];
   renderCart();
   closeCheckoutModal();
-  alert('Réservation confirmée ! Un email de confirmation vous a été envoyé.');
+  const balanceMsg = details.deliveryChoice === 'delivery'
+    ? `Solde de ${formatPrice(details.balance)} à régler à la livraison.`
+    : `Solde de ${formatPrice(details.balance)} à régler au retrait en boutique.`;
+  alert(`Acompte reçu, réservation confirmée ! ${balanceMsg} Un email de confirmation vous a été envoyé.`);
 }
 
 // ============================================================
@@ -336,6 +384,7 @@ function closeLegalModals() {
 document.addEventListener('DOMContentLoaded', () => {
   renderCatalogue();
   renderCart();
+  watchAuthState();
 
   document.getElementById('cartToggle').addEventListener('click', openCart);
   document.getElementById('closeCart').addEventListener('click', closeCart);
@@ -349,7 +398,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('closeCheckout').addEventListener('click', closeCheckoutModal);
   document.getElementById('checkoutOverlay').addEventListener('click', closeCheckoutModal);
-  document.getElementById('cinetpayPayBtn').addEventListener('click', startCinetPayCheckout);
+  document.getElementById('fedapayPayBtn').addEventListener('click', startFedaPayCheckout);
+  document.getElementById('deliveryChoice').addEventListener('change', (e) => {
+    document.getElementById('deliveryAddressRow').style.display = e.target.value === 'delivery' ? 'block' : 'none';
+  });
 
   document.getElementById('proceedToCheckout').addEventListener('click', () => {
     if (cart.length === 0) return;
@@ -377,6 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const profileDoc = await db.collection('users').doc(cred.user.uid).get();
       const profile = profileDoc.exists ? profileDoc.data() : {};
       currentUser = { firstName: profile.firstName || '', lastName: profile.lastName || '', email, phone: profile.phone, city: profile.city, zip: profile.zip };
+      renderUserStatus();
       closeAuthModal();
       openCheckout();
     } catch (err) {
@@ -415,6 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
         consentDate: firebase.firestore.FieldValue.serverTimestamp()
       });
       currentUser = { firstName, lastName, email, phone, city, zip };
+      renderUserStatus();
       closeAuthModal();
       openCheckout();
     } catch (err) {
@@ -432,190 +486,4 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', closeLegalModals);
   });
   document.getElementById('legalOverlay').addEventListener('click', closeLegalModals);
-});:root {
-  --bg-dark: #0F2027;
-  --bg-dark-2: #16333B;
-  --bg-light: #F6FAF9;
-  --surface: #FFFFFF;
-  --teal: #4FBDAE;
-  --teal-dark: #337F76;
-  --coral: #F1602F;
-  --ink: #12262B;
-  --ink-soft: #5B6E71;
-  --border: #E2EAE8;
-  --radius: 14px;
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'Manrope', sans-serif;
-}
-
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body {
-  margin: 0;
-  font-family: var(--font-body);
-  color: var(--ink);
-  background: var(--bg-light);
-  line-height: 1.5;
-}
-h1, h2, h3, .logo, .cart-count, .step-index, .price, .gauge-count {
-  font-family: var(--font-display);
-}
-.wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
-
-/* Header */
-.site-header { position: sticky; top: 0; z-index: 40; background: var(--bg-dark); color: #fff; }
-.header-inner { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 16px; }
-.logo { font-weight: 700; font-size: 1.3rem; color: #fff; text-decoration: none; letter-spacing: -0.02em; }
-.logo span { color: var(--teal); }
-.main-nav { display: none; gap: 24px; }
-.main-nav a { color: #CFE7E3; text-decoration: none; font-size: 0.95rem; }
-.main-nav a:hover { color: #fff; }
-@media (min-width: 760px) { .main-nav { display: flex; } }
-.cart-btn {
-  display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
-  color: #fff; padding: 8px 14px; border-radius: 999px; cursor: pointer;
-  font-family: var(--font-body); font-weight: 600; font-size: 0.9rem;
-}
-.cart-count {
-  background: var(--coral); color: #fff; border-radius: 999px; min-width: 20px; height: 20px;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; padding: 0 5px;
-}
-.user-status { display: flex; align-items: center; gap: 10px; color: #CFE7E3; font-size: 0.85rem; }
-.logout-btn { color: var(--teal); text-decoration: underline; font-size: 0.8rem; }
-.delivery-choice { margin: 14px 0; display: flex; flex-direction: column; gap: 6px; }
-.delivery-choice label { font-size: 0.85rem; font-weight: 600; }
-.delivery-choice select, .delivery-choice input {
-  padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-family: var(--font-body); font-size: 0.95rem;
-}
-
-/* Hero */
-.hero {
-  background: linear-gradient(120deg, var(--bg-dark) 0%, var(--bg-dark-2) 55%, #1E4A4A 100%);
-  background-size: 200% 200%; color: #fff; padding: 72px 0 88px;
-}
-@media (prefers-reduced-motion: no-preference) { .hero { animation: heatShift 14s ease-in-out infinite; } }
-@keyframes heatShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-.eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.75rem; color: var(--teal); font-weight: 700; margin: 0 0 14px; }
-.hero h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: 1.08; margin: 0 0 18px; font-weight: 700; letter-spacing: -0.02em; }
-.hero h1 em { font-style: normal; color: var(--coral); }
-.hero-sub { font-size: 1.1rem; color: #CFE7E3; max-width: 480px; margin: 0 0 32px; }
-
-.btn {
-  display: inline-block; font-family: var(--font-body); font-weight: 700; font-size: 0.95rem;
-  padding: 14px 26px; border-radius: 999px; border: none; cursor: pointer; text-decoration: none;
-  transition: transform 0.15s ease, background 0.15s ease;
-}
-.btn-primary { background: var(--coral); color: #fff; }
-.btn-primary:hover { background: #D94E20; transform: translateY(-1px); }
-.btn-full { width: 100%; text-align: center; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-/* How it works */
-.how-it-works, .catalogue { scroll-margin-top: 84px; padding: 64px 0; }
-.how-it-works h2, .catalogue h2 { font-size: 1.8rem; margin: 0 0 32px; letter-spacing: -0.01em; }
-.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; grid-template-columns: 1fr; }
-@media (min-width: 720px) { .steps { grid-template-columns: repeat(3, 1fr); } }
-.step-index {
-  display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;
-  border-radius: 50%; background: var(--teal); color: #fff; font-weight: 700; margin-bottom: 14px;
-}
-.steps h3 { margin: 0 0 8px; font-size: 1.1rem; }
-.steps p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
-
-/* Catalogue */
-.catalogue-alt { background: #EFF6F5; }
-.product-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-.product-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 20px; display: flex; flex-direction: column; gap: 12px;
-}
-.product-visual {
-  width: 100%; height: 110px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-  font-size: 2.6rem; background: linear-gradient(135deg, #E7F5F3, #D3ECE8);
-}
-.product-name { font-weight: 700; font-size: 1rem; margin: 0; }
-.price { font-weight: 700; font-size: 1.15rem; color: var(--ink); margin: 0; }
-.gauge { height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; }
-.gauge-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--teal), var(--coral)); }
-.gauge-label { font-size: 0.8rem; color: var(--ink-soft); display: flex; justify-content: space-between; }
-.gauge-count { font-weight: 700; color: var(--coral); }
-.add-btn {
-  background: var(--ink); color: #fff; border: none; border-radius: 999px; padding: 10px 16px;
-  font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: var(--font-body);
-}
-.add-btn:hover { background: var(--teal-dark); }
-.add-btn:disabled { background: #C7D0CE; cursor: not-allowed; }
-
-/* Footer */
-.site-footer { background: var(--bg-dark); color: #CFE7E3; padding: 40px 0; margin-top: 60px; }
-.footer-inner { display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; align-items: flex-start; }
-.footer-logo { margin: 0 0 6px; }
-.footer-note { margin: 0; font-size: 0.85rem; color: #9DBBB6; }
-.footer-links { display: flex; flex-direction: column; gap: 8px; }
-.footer-links a { color: #CFE7E3; }
-.link-btn {
-  background: none; border: none; color: inherit; text-decoration: underline; cursor: pointer;
-  font-family: var(--font-body); font-size: 0.9rem; padding: 0; text-align: left;
-}
-.link-btn.inline { display: inline; font-size: inherit; }
-
-/* Panneau réservation + fenêtres */
-.drawer-overlay, .modal-overlay {
-  position: fixed; inset: 0; background: rgba(15,32,39,0.5); opacity: 0; pointer-events: none;
-  transition: opacity 0.2s ease; z-index: 50;
-}
-.drawer-overlay.visible, .modal-overlay.visible { opacity: 1; pointer-events: auto; }
-.cart-drawer {
-  position: fixed; top: 0; right: 0; height: 100%; width: min(380px, 100%); background: var(--surface);
-  z-index: 60; transform: translateX(100%); transition: transform 0.25s ease;
-  display: flex; flex-direction: column; padding: 20px;
-}
-.cart-drawer.open { transform: translateX(0); }
-.drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.icon-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--ink); }
-.cart-items { flex: 1; overflow-y: auto; }
-.cart-empty { color: var(--ink-soft); }
-.cart-line { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 8px; }
-.cart-line-name { font-weight: 600; font-size: 0.9rem; }
-.cart-line-remove { background: none; border: none; color: var(--coral); cursor: pointer; font-size: 0.85rem; }
-.cart-footer { border-top: 1px solid var(--border); padding-top: 16px; margin-top: 12px; }
-.cart-total-row { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 1.05rem; }
-
-.modal {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -48%); width: min(420px, 92vw);
-  max-height: 88vh; overflow-y: auto; background: var(--surface); border-radius: var(--radius);
-  padding: 28px; z-index: 70; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.modal.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
-.modal-text ul { padding-left: 20px; color: var(--ink-soft); font-size: 0.92rem; }
-.modal-close { position: absolute; top: 16px; right: 16px; }
-
-.auth-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-.auth-tab {
-  flex: 1; background: var(--bg-light); border: 1px solid var(--border); padding: 10px; border-radius: 10px;
-  cursor: pointer; font-weight: 700; font-family: var(--font-body); color: var(--ink-soft);
-}
-.auth-tab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
-.auth-form { display: none; flex-direction: column; gap: 6px; }
-.auth-form.active { display: flex; }
-.auth-form label { font-size: 0.85rem; font-weight: 600; margin-top: 8px; }
-.auth-form input { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-family: var(--font-body); font-size: 0.95rem; }
-.auth-form input:focus-visible, .btn:focus-visible, .add-btn:focus-visible, .icon-btn:focus-visible, .link-btn:focus-visible {
-  outline: 3px solid var(--teal); outline-offset: 2px;
-}
-.checkbox-row { display: flex; align-items: flex-start; gap: 8px; font-size: 0.82rem; color: var(--ink-soft); margin-top: 12px; }
-.checkbox-row input { margin-top: 3px; }
-.form-error { color: var(--coral); font-size: 0.85rem; min-height: 1em; margin: 8px 0 0; }
-
-.checkout-hello { color: var(--ink-soft); margin-top: -8px; }
-.checkout-summary { margin: 16px 0; }
-.checkout-line { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 6px 0; }
-.checkout-total-row { display: flex; justify-content: space-between; font-size: 1.1rem; padding: 12px 0; border-top: 1px solid var(--border); margin-bottom: 16px; }
-.checkout-note { font-size: 0.8rem; color: var(--ink-soft); margin-top: 14px; text-align: center; }
-
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .hero { animation: none; }
-  * { transition-duration: 0.01ms !important; }
-                            }
+});
