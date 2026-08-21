@@ -1,15 +1,15 @@
 // ============================================================
 // PRODUITS — remplacez par vos vrais appareils / stock réel
 // ============================================================
-const PRODUCTS = [
-  { id: 'clim-9k', category: 'clim', name: 'Climatiseur mobile 9000 BTU', price: 349, stock: 8, maxStock: 20, icon: '❄️' },
+
+  const PRODUCTS = [
+  { id: 'clim-9k', category: 'clim', name: 'Climatiseur mobile 9000 BTU', price: 329, stock: 8, maxStock: 20, icon: '❄️' },
   { id: 'clim-12k-silence', category: 'clim', name: 'Climatiseur mobile 12000 BTU silencieux', price: 449, stock: 4, maxStock: 20, icon: '🧊' },
-  { id: 'clim-split', category: 'clim', name: 'Climatiseur split Inverter 12000 BTU', price: 649, stock: 3, maxStock: 15, icon: '❄️' },
+  { id: 'clim-split', category: 'clim', name: 'Climatiseur split Inverter 12000 BTU', price: 599, stock: 3, maxStock: 15, icon: '❄️' },
   { id: 'vent-pied', category: 'vent', name: 'Ventilateur sur pied 3 vitesses', price: 39, stock: 22, maxStock: 40, icon: '🌀' },
   { id: 'vent-brume', category: 'vent', name: 'Ventilateur brumisateur extérieur', price: 79, stock: 11, maxStock: 30, icon: '💦' },
   { id: 'vent-usb', category: 'vent', name: 'Mini ventilateur USB rechargeable', price: 19, stock: 35, maxStock: 50, icon: '🔌' },
 ];
-
 // ============================================================
 // FIREBASE — À REMPLACER par la configuration de votre projet
 // (Console Firebase > Paramètres du projet > Vos applications)
