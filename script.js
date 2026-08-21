@@ -1,8 +1,7 @@
 // ============================================================
 // PRODUITS — remplacez par vos vrais appareils / stock réel
 // ============================================================
-
-  const PRODUCTS = [
+const PRODUCTS = [
   { id: 'clim-9k', category: 'clim', name: 'Climatiseur mobile 9000 BTU', price: 329, stock: 8, maxStock: 20, icon: '❄️', image: 'photos/clim-9k.jpg' },
   { id: 'clim-12k-silence', category: 'clim', name: 'Climatiseur mobile 12000 BTU silencieux', price: 449, stock: 4, maxStock: 20, icon: '🧊' },
   { id: 'clim-split', category: 'clim', name: 'Climatiseur split Inverter 12000 BTU', price: 599, stock: 3, maxStock: 15, icon: '❄️', image: 'photos/clim-split.jpg' },
