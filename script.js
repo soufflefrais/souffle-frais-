@@ -111,8 +111,16 @@ function buildProductCard(product) {
 
   const visual = document.createElement('div');
   visual.className = 'product-visual';
-  visual.textContent = product.icon;
-  visual.setAttribute('aria-hidden', 'true');
+  if (product.image) {
+    const img = document.createElement('img');
+    img.src = product.image;
+    img.alt = product.name;
+    img.loading = 'lazy';
+    visual.appendChild(img);
+  } else {
+    visual.textContent = product.icon;
+    visual.setAttribute('aria-hidden', 'true');
+  }
 
   const name = document.createElement('h3');
   name.className = 'product-name';
