@@ -9,6 +9,7 @@ const PRODUCTS = [
   { id: 'vent-brume', category: 'vent', name: 'Ventilateur brumisateur extérieur', price: 79, stock: 11, maxStock: 30, icon: '💦' },
   { id: 'vent-usb', category: 'vent', name: 'Mini ventilateur USB rechargeable', price: 19, stock: 35, maxStock: 50, icon: '🔌', image: 'photos/vent-usb.jpg' },
 ];
+
 // ============================================================
 // FIREBASE — À REMPLACER par la configuration de votre projet
 // (Console Firebase > Paramètres du projet > Vos applications)
@@ -16,12 +17,12 @@ const PRODUCTS = [
 // mais le reste du site (catalogue, réservation) fonctionne normalement.
 // ============================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyB2HaXnwXK8xU1n23eItjscT_diuaaV0cQ",
-  authDomain: "souffle-frais.firebaseapp.com",
-  projectId: "souffle-frais",
-  storageBucket: "souffle-frais.firebasestorage.app",
-  messagingSenderId: "281045967809",
-  appId: "1:281045967809:web:e1d806796d6c88a13d0540"
+  apiKey: "VOTRE_API_KEY",
+  authDomain: "VOTRE_PROJET.firebaseapp.com",
+  projectId: "VOTRE_PROJET",
+  storageBucket: "VOTRE_PROJET.appspot.com",
+  messagingSenderId: "VOTRE_SENDER_ID",
+  appId: "VOTRE_APP_ID"
 };
 
 let auth = null;
@@ -116,6 +117,11 @@ function buildProductCard(product) {
     img.src = product.image;
     img.alt = product.name;
     img.loading = 'lazy';
+    img.onerror = () => {
+      img.remove();
+      visual.textContent = product.icon;
+      visual.setAttribute('aria-hidden', 'true');
+    };
     visual.appendChild(img);
   } else {
     visual.textContent = product.icon;
@@ -494,3 +500,4 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('legalOverlay').addEventListener('click', closeLegalModals);
 });
+              
