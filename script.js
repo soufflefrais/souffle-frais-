@@ -9,7 +9,8 @@ const PRODUCTS = [
   { id: 'vent-brume', category: 'vent', name: 'Ventilateur brumisateur extérieur', price: 79, stock: 11, maxStock: 30, icon: '💦', image: 'photos/vent-brume.jpg' },
   { id: 'vent-usb', category: 'vent', name: 'Mini ventilateur USB rechargeable', price: 19, stock: 35, maxStock: 50, icon: '🔌', image: 'photos/vent-usb.jpg' },
 ];
-// ============================================================
+/
+/ ============================================================
 // FIREBASE — À REMPLACER par la configuration de votre projet
 // (Console Firebase > Paramètres du projet > Vos applications)
 // Tant que ce n'est pas fait, la connexion/inscription reste désactivée
