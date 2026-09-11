@@ -1,4 +1,4 @@
-// ============================================================
+ // ============================================================
 // PRODUITS — remplacez par vos vrais appareils / stock réel
 // ============================================================
 const PRODUCTS = [
@@ -500,4 +500,4 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('legalOverlay').addEventListener('click', closeLegalModals);
 });
-              
+             
