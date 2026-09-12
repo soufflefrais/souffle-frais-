@@ -300,19 +300,9 @@ function confirmDirectReservation() {
   const deliveryChoice = document.getElementById('deliveryChoice').value;
   const deliveryAddress = document.getElementById('deliveryAddress').value.trim();
   if (deliveryChoice === 'delivery' && !deliveryAddress) {
-    cart = [];
-  renderCart();
-  closeCheckoutModal();
-  openWhatsAppConfirmation();
-}
-
-function openWhatsAppConfirmation() {
-  const message = "Bonjour, je viens de réserver sur SouffleFrais et je souhaite finaliser le paiement de mon acompte.";
-  document.getElementById('whatsappConfirmLink').href =
-    `https://wa.me/33756973314?text=${encodeURIComponent(message)}`;
-  openLegalModal('whatsappConfirmModal');
-}
-  
+    alert('Merci de préciser votre adresse de livraison.');
+    return;
+  }
 
   const total = cart.reduce((sum, item) => sum + item.price, 0);
   const deposit = Math.round(total * 0.5 * 100) / 100;
@@ -323,11 +313,15 @@ function openWhatsAppConfirmation() {
     deliveryChoice, deliveryAddress
   });
 }
-    
+
+function openWhatsAppConfirmation() {
+  const message = "Bonjour, je viens de réserver sur SouffleFrais et je souhaite finaliser le paiement de mon acompte.";
+  document.getElementById('whatsappConfirmLink').href =
+    `https://wa.me/33756973314?text=${encodeURIComponent(message)}`;
+  openLegalModal('whatsappConfirmModal');
+}
 
 async function confirmReservation(details) {
-  // En production : vérifiez la transaction FedaPay côté serveur avant de
-  // considérer l'acompte comme définitivement payé.
   if (firebaseReady && db && currentUser) {
     try {
       await db.collection('reservations').add({
@@ -346,11 +340,10 @@ async function confirmReservation(details) {
       console.error("Erreur d'enregistrement Firestore :", e);
     }
   }
-  
-cart = [];
+  cart = [];
   renderCart();
   closeCheckoutModal();
-  alert('Merci pour votre réservation ! Veuillez nous contacter sur WhatsApp pour finaliser votre paiement.');
+  openWhatsAppConfirmation();
 }
 // ============================================================
 // FENÊTRES MENTIONS LÉGALES / CONFIDENTIALITÉ
