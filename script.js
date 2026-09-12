@@ -294,59 +294,36 @@ function closeCheckoutModal() {
   document.getElementById('checkoutOverlay').classList.remove('visible');
 }
 
-function startFedaPayCheckout() {
-  if (!window.FedaPay) {
-    alert("Le module de paiement FedaPay ne s'est pas chargé. Vérifiez votre connexion.");
-    return;
-  }
-  if (fedapayConfig.publicKey === 'VOTRE_CLE_PUBLIQUE_FEDAPAY') {
-    alert('Paiement indisponible : configurez FedaPay (voir script.js).');
-    return;
-  }
+function confirmDirectReservation() {
   if (cart.length === 0 || !currentUser) return;
 
   const deliveryChoice = document.getElementById('deliveryChoice').value;
   const deliveryAddress = document.getElementById('deliveryAddress').value.trim();
   if (deliveryChoice === 'delivery' && !deliveryAddress) {
-    alert('Merci de préciser votre adresse de livraison.');
-    return;
-  }
+    cart = [];
+  renderCart();
+  closeCheckoutModal();
+  openWhatsAppConfirmation();
+}
+
+function openWhatsAppConfirmation() {
+  const message = "Bonjour, je viens de réserver sur SouffleFrais et je souhaite finaliser le paiement de mon acompte.";
+  document.getElementById('whatsappConfirmLink').href =
+    `https://wa.me/33756973314?text=${encodeURIComponent(message)}`;
+  openLegalModal('whatsappConfirmModal');
+}
+  
 
   const total = cart.reduce((sum, item) => sum + item.price, 0);
   const deposit = Math.round(total * 0.5 * 100) / 100;
-  const depositXOF = Math.round(deposit * EUR_TO_XOF);
-  const description = cart.map(item => item.name).join(', ').slice(0, 255);
 
-  const FedaPay = window['FedaPay'];
-  const widget = FedaPay.init({
-    public_key: fedapayConfig.publicKey,
-    environment: fedapayConfig.environment,
-    transaction: {
-      amount: depositXOF,
-      description: `Acompte 50% - ${description || 'Réservation SouffleFrais'}`
-    },
-    currency: { iso: 'XOF' },
-    customer: {
-      email: currentUser.email,
-      firstname: currentUser.firstName,
-      lastname: currentUser.lastName,
-      phone_number: { number: currentUser.phone, country: 'BJ' }
-    },
-    onComplete: (resp) => {
-      if (resp.reason === FedaPay.DIALOG_DISMISSED) return;
-      if (resp.transaction && resp.transaction.status === 'approved') {
-        confirmReservation({
-          transactionId: resp.transaction.id,
-          total, deposit, balance: total - deposit,
-          deliveryChoice, deliveryAddress
-        });
-      } else {
-        alert('Le paiement a échoué ou a été refusé. Réessayez.');
-      }
-    }
+  confirmReservation({
+    transactionId: null,
+    total, deposit, balance: total - deposit,
+    deliveryChoice, deliveryAddress
   });
-  widget.open();
 }
+    
 
 async function confirmReservation(details) {
   // En production : vérifiez la transaction FedaPay côté serveur avant de
@@ -369,15 +346,12 @@ async function confirmReservation(details) {
       console.error("Erreur d'enregistrement Firestore :", e);
     }
   }
-  cart = [];
+  
+cart = [];
   renderCart();
   closeCheckoutModal();
-  const balanceMsg = details.deliveryChoice === 'delivery'
-    ? `Solde de ${formatPrice(details.balance)} à régler à la livraison.`
-    : `Solde de ${formatPrice(details.balance)} à régler au retrait en boutique.`;
-  alert(`Acompte reçu, réservation confirmée ! ${balanceMsg} Un email de confirmation vous a été envoyé.`);
+  alert('Merci pour votre réservation ! Veuillez nous contacter sur WhatsApp pour finaliser votre paiement.');
 }
-
 // ============================================================
 // FENÊTRES MENTIONS LÉGALES / CONFIDENTIALITÉ
 // ============================================================
@@ -410,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('closeCheckout').addEventListener('click', closeCheckoutModal);
   document.getElementById('checkoutOverlay').addEventListener('click', closeCheckoutModal);
-  document.getElementById('fedapayPayBtn').addEventListener('click', startFedaPayCheckout);
+  document.getElementById('fedapayPayBtn').addEventListener('click', confirmDirectReservation);
   document.getElementById('deliveryChoice').addEventListener('change', (e) => {
     document.getElementById('deliveryAddressRow').style.display = e.target.value === 'delivery' ? 'block' : 'none';
   });
