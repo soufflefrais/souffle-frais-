@@ -190,10 +190,8 @@
     <span>Solde à régler au retrait/livraison</span>
     <span id="checkoutBalance">0 €</span>
   </div>
-  <button type="button" id="fedapayPayBtn" class="btn btn-primary btn-full">Payer l'acompte avec FedaPay</button>
-  <p class="checkout-note">Paiement sécurisé par FedaPay (carte bancaire). Vous recevrez une confirmation par email.</p>
-</div>
-
+<button type="button" id="fedapayPayBtn" class="btn btn-primary btn-full">Confirmer la réservation</button>
+<p>50% d'acompte à valider par WhatsApp après réservation, solde à régler au retrait ou à la livraison.</p>11
 <!-- Mentions légales / confidentialité -->
 <div class="modal-overlay" id="legalOverlay"></div>
 <div class="modal modal-text" id="mentionsLegalesModal" role="dialog" aria-label="Mentions légales" aria-hidden="true">
@@ -216,7 +214,7 @@
   <ul>
     <li>Vos données ne sont jamais vendues à des tiers.</li>
     <li>Vous pouvez demander l'accès, la correction ou la suppression de vos données à tout moment, à contact@souffle-frais.fr.</li>
-    <li>Le paiement est traité directement par FedaPay ; nous ne stockons aucune donnée bancaire.</li>
+  <li>L'acompte est réglé directement par vos soins, via WhatsApp, après votre réservation ; nous ne stockons aucune donnée bancaire sur ce site.</li>
   </ul>
   <p><em>Document type à faire valider avant mise en ligne.</em></p>
 </div>
@@ -225,9 +223,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
-<!-- FedaPay : remplacez publicKey dans script.js -->
-<script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
 
 <script src="script.js"></script>
 </body>
