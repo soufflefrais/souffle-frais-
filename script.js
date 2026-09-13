@@ -16,14 +16,13 @@ const PRODUCTS = [
 // mais le reste du site (catalogue, réservation) fonctionne normalement.
 // ============================================================
 const firebaseConfig = {
-  apiKey: "VOTRE_API_KEY",
-  authDomain: "VOTRE_PROJET.firebaseapp.com",
-  projectId: "VOTRE_PROJET",
-  storageBucket: "VOTRE_PROJET.appspot.com",
-  messagingSenderId: "VOTRE_SENDER_ID",
-  appId: "VOTRE_APP_ID"
+  apiKey: "AIzaSyCCzeQ9lbDRNr8rMhGaJlAQIJBD-HTiTfU",
+  authDomain: "soufflefrais-ba9fe.firebaseapp.com",
+  projectId: "soufflefrais-ba9fe",
+  storageBucket: "soufflefrais-ba9fe.firebasestorage.app",
+  messagingSenderId: "804623250424",
+  appId: "1:804623250424:web:8fecdb0278ee13eb0e5c0d"
 };
-
 let auth = null;
 let db = null;
 let firebaseReady = false;
