@@ -74,18 +74,6 @@ function renderUserStatus() {
 }
 
 // ============================================================
-// FEDAPAY — À REMPLACER par la clé publique de votre compte
-// (Tableau de bord FedaPay > Paramètres > Clés API)
-// Créez un compte de type "Individuel / Startup" sur fedapay.com
-// ============================================================
-const fedapayConfig = {
-  publicKey: 'VOTRE_CLE_PUBLIQUE_FEDAPAY',
-  environment: 'live' // mettez 'sandbox' pour tester sans vrai paiement
-};
-// Le XOF est indexé sur l'euro à un taux fixe (pas besoin de le mettre à jour)
-const EUR_TO_XOF = 655.957;
-
-// ============================================================
 // ÉTAT
 // ============================================================
 let cart = [];          // { productId, name, price }
@@ -332,7 +320,7 @@ async function confirmReservation(details) {
         balanceDue: 'à régler au retrait',
         deliveryChoice: details.deliveryChoice,
         deliveryAddress: details.deliveryChoice === 'delivery' ? details.deliveryAddress : null,
-        fedapayTransactionId: details.transactionId,
+        paymentReference: details.transactionId,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     } catch (e) {
