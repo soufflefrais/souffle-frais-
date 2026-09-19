@@ -308,10 +308,37 @@ function openWhatsAppConfirmation() {
   openLegalModal('whatsappConfirmModal');
 }
 
-async function confirmReservation(details) {
-  if (firebaseReady && db && currentUser) {
-    try {
-      await db.collection('reservations').add({
+ 
+ async function confirmReservation(details) {
+  if (!firebaseReady || !db || !currentUser) {
+    alert('Impossible de confirmer la réservation pour le moment. Réessayez dans un instant.');
+    return;
+  }
+
+  const quantities = {};
+  cart.forEach(item => {
+    quantities[item.productId] = (quantities[item.productId] || 0) + 1;
+  });
+  const productIds = Object.keys(quantities);
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const refs = productIds.map(id => db.collection('products').doc(id));
+      const docs = await Promise.all(refs.map(ref => transaction.get(ref)));
+
+      docs.forEach((doc, i) => {
+        const available = doc.exists ? doc.data().stock : 0;
+        if (available < quantities[productIds[i]]) {
+          throw new Error('STOCK_INSUFFISANT');
+        }
+      });
+
+      docs.forEach((doc, i) => {
+        transaction.update(refs[i], { stock: doc.data().stock - quantities[productIds[i]] });
+      });
+
+      const reservationRef = db.collection('reservations').doc();
+      transaction.set(reservationRef, {
         userEmail: currentUser.email,
         items: cart,
         total: details.total,
@@ -323,10 +350,17 @@ async function confirmReservation(details) {
         paymentReference: details.transactionId,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-    } catch (e) {
+    });
+  } catch (e) {
+    if (e.message === 'STOCK_INSUFFISANT') {
+      alert("Désolé, un ou plusieurs appareils de votre panier viennent d'être réservés par quelqu'un d'autre. Vérifiez votre panier et réessayez.");
+    } else {
       console.error("Erreur d'enregistrement Firestore :", e);
+      alert('Une erreur est survenue, merci de réessayer.');
     }
+    return;
   }
+
   cart = [];
   renderCart();
   closeCheckoutModal();
@@ -351,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCatalogue();
   renderCart();
   watchAuthState();
-
+watchProductStock();
   document.getElementById('cartToggle').addEventListener('click', openCart);
   document.getElementById('closeCart').addEventListener('click', closeCart);
   document.getElementById('cartOverlay').addEventListener('click', closeCart);
